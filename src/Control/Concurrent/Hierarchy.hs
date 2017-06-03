@@ -1,4 +1,10 @@
-module Control.Concurrent.Hierarchy where
+module Control.Concurrent.Hierarchy
+    (
+      ThreadMap(..)
+    , newThreadMap
+    , newChild
+    , shutdown
+    ) where
 
 import           Prelude                 hiding (lookup)
 
