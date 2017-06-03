@@ -23,21 +23,6 @@ newtype ThreadMap = ThreadMap (MVar (Map ThreadId (MVar ())))
 newThreadMap :: IO ThreadMap
 newThreadMap = ThreadMap <$> newMVar empty
 
--- deprecated
-newRoot :: (ThreadMap -> IO ()) -> IO ThreadMap
-newRoot action = mask_ $ do
-    rootChildren <- newThreadMap
-    void $ newChild rootChildren action
-    return rootChildren
-
--- deprecated
-shutdownRoot :: ThreadMap -> IO ()
-shutdownRoot (ThreadMap rootChildren) = do
-    currentChildren <- readMVar rootChildren
-    mapM_ (killThread . fst) $ toList currentChildren
-    remainingChildren <- readMVar rootChildren
-    mapM_ (takeMVar . snd) $ toList remainingChildren
-
 newChild :: ThreadMap -> (ThreadMap -> IO ()) -> IO ThreadId
 newChild brothers@(ThreadMap bMap) action = do
     finishFlag <- newEmptyMVar
@@ -58,22 +43,6 @@ shutdown (ThreadMap children) = do
 cleanup :: ThreadMap -> ThreadMap -> IO ()
 cleanup (ThreadMap brotherMap) children = do
     shutdown children
-    myThread <- myThreadId
-    bMap <- readMVar brotherMap
-    case lookup myThread bMap of
-        (Just bMVar)    -> do
-            putMVar bMVar ()
-            takeMVar brotherMap >>= putMVar brotherMap . delete myThread
-        Nothing         -> return ()
-
-
--- deprecated
-shutdownChildren :: ThreadMap -> ThreadMap -> IO ()
-shutdownChildren (ThreadMap brotherMap) (ThreadMap children) = do
-    currentChildren <- readMVar children
-    mapM_ (killThread . fst) $ toList currentChildren
-    remainingChildren <- readMVar children
-    mapM_ (takeMVar . snd) $ toList remainingChildren
     myThread <- myThreadId
     bMap <- readMVar brotherMap
     case lookup myThread bMap of
