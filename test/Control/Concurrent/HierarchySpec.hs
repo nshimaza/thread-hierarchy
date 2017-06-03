@@ -1,4 +1,3 @@
-{-# LANGUAGE StandaloneDeriving  #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Control.Concurrent.HierarchySpec where
