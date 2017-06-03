@@ -14,12 +14,17 @@ import           Data.Map.Strict         (Map, delete, empty, insert, lookup,
 
 newtype ThreadMap = ThreadMap (MVar (Map ThreadId (MVar ())))
 
+newThreadMap :: IO ThreadMap
+newThreadMap = ThreadMap <$> newMVar empty
+
+-- deprecated
 newRoot :: (ThreadMap -> IO ()) -> IO ThreadMap
 newRoot action = mask_ $ do
-    rootChildren <- ThreadMap <$> newMVar empty
+    rootChildren <- newThreadMap
     void $ newChild rootChildren action
     return rootChildren
 
+-- deprecated
 shutdownRoot :: ThreadMap -> IO ()
 shutdownRoot (ThreadMap rootChildren) = do
     currentChildren <- readMVar rootChildren
@@ -30,13 +35,33 @@ shutdownRoot (ThreadMap rootChildren) = do
 newChild :: ThreadMap -> (ThreadMap -> IO ()) -> IO ThreadId
 newChild brothers@(ThreadMap bMap) action = do
     finishFlag <- newEmptyMVar
-    children <- ThreadMap <$> newMVar empty
+    children <- newThreadMap
     mask_ $ do
         child <- forkIOWithUnmask $ \unmask ->
-            finally (unmask (action children)) (shutdownChildren brothers children)
+            (unmask (action children)) `finally` (cleanup brothers children)
         takeMVar bMap >>= putMVar bMap . insert child finishFlag
         return child
 
+shutdown :: ThreadMap -> IO ()
+shutdown (ThreadMap children) = do
+    currentChildren <- readMVar children
+    mapM_ (killThread . fst) $ toList currentChildren
+    remainingChildren <- readMVar children
+    mapM_ (takeMVar . snd) $ toList remainingChildren
+
+cleanup :: ThreadMap -> ThreadMap -> IO ()
+cleanup (ThreadMap brotherMap) children = do
+    shutdown children
+    myThread <- myThreadId
+    bMap <- readMVar brotherMap
+    case lookup myThread bMap of
+        (Just bMVar)    -> do
+            putMVar bMVar ()
+            takeMVar brotherMap >>= putMVar brotherMap . delete myThread
+        Nothing         -> return ()
+
+
+-- deprecated
 shutdownChildren :: ThreadMap -> ThreadMap -> IO ()
 shutdownChildren (ThreadMap brotherMap) (ThreadMap children) = do
     currentChildren <- readMVar children
