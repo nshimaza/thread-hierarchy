@@ -18,6 +18,22 @@ In order to this module works properly, user must ensure following rules.
 * When the user provided handler creates its child thread, it must use newChild.
 * At the same time, the handler must pass the 'ThreadMap' received via its argument to newChild.
 
+'ThreadMap' is mutable map holding live threads.  Each threads managed by this module has its
+own 'ThreadMap' instance.  Each 'ThreadMap' keeps live "child" threads for future cleanup on exit.
+Populating 'ThreadMap' is done by newChild automatically.
+Actually the function newChild accept a 'ThreadMap' then mutate it.
+
+At the same time newChild create a new empty 'ThreadMap' for newly created thread and pass it
+to user provided handler of the new thread.
+Also newChild automatically install cleanup routine which kill all threads living in the new
+'ThreadMap' created for the thread.
+The cleanup routine also unregister itself from 'ThreadMap' of parent.
+
+In order to work this properly, user provided thread handler must use newChild with 'ThreadMap'
+given via its argument when it creates its child so that cleanup routine can terminate
+its children properly.
+
+
 === Example
 
 When you create the first thread managed by this module, create a new empty 'ThreadMap' then call
