@@ -11,10 +11,12 @@ import           Data.Typeable           (Typeable, typeOf)
 
 import           Test.Hspec
 
-import           Control.Concurrent.Hierarchy
+import           Control.Concurrent.HierarchyInternal
 
 instance Typeable a => Show (MVar a) where
     show mVar = show (typeOf mVar)
+
+instance Show FinishMarker
 
 spec :: Spec
 spec = do
@@ -134,40 +136,40 @@ spec = do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
-            let (_, finishMarker) = head $ toList currentRootChildren
-            mark <- takeMVar finishMarker
+            let (_, FinishMarker markerMVar) = head $ toList currentRootChildren
+            mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
         it "is filled by () on thread exit by kill" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^6)
             currentRootChildren <- readMVar rtMapMVar
-            let (threadID, finishMarker) = head $ toList currentRootChildren
+            let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren
             killThread threadID
-            mark <- takeMVar finishMarker
+            mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
         it "is available after thread normal exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
-            let (_, finishMarker) = head $ toList currentRootChildren
+            let (_, FinishMarker markerMVar) = head $ toList currentRootChildren
             threadDelay (20 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
             toList currentRootChildren `shouldBe` []
-            mark <- takeMVar finishMarker
+            mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
         it "is available after the thread was killed" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^6)
             currentRootChildren <- readMVar rtMapMVar
-            let (threadID, finishMarker) = head $ toList currentRootChildren
+            let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren
             killThread threadID
             threadDelay (10 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
             toList currentRootChildren `shouldBe` []
-            mark <- takeMVar finishMarker
+            mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
         it "works with many threads in normal exit scenario" $ do
@@ -179,8 +181,8 @@ spec = do
             threadDelay (1 * 10^6)
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
-            forM_ childrenList $ \(_, finishMarker) -> do
-                mark <- takeMVar finishMarker
+            forM_ childrenList $ \(_, FinishMarker markerMVar) -> do
+                mark <- takeMVar markerMVar
                 mark `shouldBe` ()
 
         it "works with many threads in killed exit scenario" $ do
@@ -193,8 +195,8 @@ spec = do
             threadDelay (1 * 10^6)
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
-            forM_ childrenList $ \(_, finishMarker) -> do
-                mark <- takeMVar finishMarker
+            forM_ childrenList $ \(_, FinishMarker markerMVar) -> do
+                mark <- takeMVar markerMVar
                 mark `shouldBe` ()
 
     describe "Overkill" $ do
