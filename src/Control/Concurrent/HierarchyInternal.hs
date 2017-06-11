@@ -15,8 +15,7 @@ import           Control.Concurrent      (ThreadId, forkIOWithUnmask,
 import           Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar,
                                           readMVar, takeMVar)
 import           Control.Exception       (finally, mask_)
-import           Data.Map.Strict         (Map, delete, empty, insert,
-                                          toList)
+import           Data.Map.Strict         (Map, delete, empty, insert, toList)
 
 {-|
     FinishMarker is created as empty MVar when a thread is created.
