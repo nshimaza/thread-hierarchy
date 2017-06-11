@@ -1,3 +1,13 @@
+{-|
+Module      : Control.Concurrent.HierarchyInternal
+Copyright   : (c) Naoto Shimazaki 2017
+License     : MIT (see the file LICENSE)
+
+Maintainer  : https://github.com/nshimaza
+Stability   : experimental
+
+Internal implementations of Control.Concurrent.Hierarchy
+-}
 module Control.Concurrent.HierarchyInternal where
 
 import           Control.Concurrent      (ThreadId, forkIOWithUnmask,
@@ -34,7 +44,6 @@ newChild
     -> (ThreadMap -> IO ()) -- ^ Action executed within the new thread.
     -> IO ThreadId          -- ^ newChild returns ThreadId of created thread.
 newChild brothers@(ThreadMap bMap) action = do
---     finishMarker <- newEmptyMVar
     finishMarker <- newFinishMarker
     children <- newThreadMap
     mask_ $ do
@@ -55,12 +64,21 @@ shutdown (ThreadMap children) = do
     remainingChildren <- readMVar children
     mapM_ (waitFinish . snd) $ toList remainingChildren
 
+{-|
+    Create new empty finish marker.  Internal use only.
+-}
 newFinishMarker :: IO FinishMarker
 newFinishMarker = FinishMarker <$> newEmptyMVar
 
+{-|
+    Filling MVar of finish marker to mark thread finished.  Only used by cleanup routine internally.
+-}
 markFinish :: FinishMarker -> IO ()
 markFinish (FinishMarker marker) = putMVar marker ()
 
+{-|
+    Wait for finish marker marked.  Only used by shutdown routine internally.
+-}
 waitFinish :: FinishMarker -> IO ()
 waitFinish (FinishMarker marker) = takeMVar marker
 
