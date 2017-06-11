@@ -105,12 +105,12 @@ newChild
     -> (ThreadMap -> IO ()) -- ^ Action executed within the new thread.
     -> IO ThreadId          -- ^ newChild returns ThreadId of created thread.
 newChild brothers@(ThreadMap bMap) action = do
-    finishFlag <- newEmptyMVar
+    finishMarker <- newEmptyMVar
     children <- newThreadMap
     mask_ $ do
         child <- forkIOWithUnmask $ \unmask ->
-            (unmask (action children)) `finally` (cleanup brothers children)
-        takeMVar bMap >>= putMVar bMap . insert child finishFlag
+            (unmask (action children)) `finally` (cleanup finishMarker brothers children)
+        takeMVar bMap >>= putMVar bMap . insert child finishMarker
         return child
 
 {-|
@@ -130,13 +130,9 @@ shutdown (ThreadMap children) = do
     It shutdowns all its child threads and unregister itself.
     This function is not an API function but for internal use only.
 -}
-cleanup :: ThreadMap -> ThreadMap -> IO ()
-cleanup (ThreadMap brotherMap) children = do
+cleanup :: MVar () -> ThreadMap -> ThreadMap -> IO ()
+cleanup finishMarker (ThreadMap brotherMap) children = do
     shutdown children
     myThread <- myThreadId
-    bMap <- readMVar brotherMap
-    case lookup myThread bMap of
-        (Just bMVar)    -> do
-            takeMVar brotherMap >>= putMVar brotherMap . delete myThread
-            putMVar bMVar ()
-        Nothing         -> return ()
+    takeMVar brotherMap >>= putMVar brotherMap . delete myThread
+    putMVar finishMarker ()

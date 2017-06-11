@@ -196,3 +196,14 @@ spec = do
             forM_ childrenList $ \(_, finishMarker) -> do
                 mark <- takeMVar finishMarker
                 mark `shouldBe` ()
+
+        it "kill terminated thread" $ do
+            rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
+            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^3)
+            currentRootChildren <- readMVar rtMapMVar
+            let (threadID, finishMarker) = head $ toList currentRootChildren
+            threadDelay (30 * 10^3)
+            killThread threadID
+            remainingRootChildren <- readMVar rtMapMVar
+            toList remainingRootChildren `shouldBe` []
+
