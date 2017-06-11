@@ -197,7 +197,8 @@ spec = do
                 mark <- takeMVar finishMarker
                 mark `shouldBe` ()
 
-        it "kill terminated thread" $ do
+    describe "Overkill" $ do
+        it "Killing normally exited thread doesn't take any effect" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
@@ -207,3 +208,17 @@ spec = do
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
 
+        it "Killing already killed thread doesn't take any effect" $ do
+            rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
+            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^6)
+            currentRootChildren <- readMVar rtMapMVar
+            let (threadID, finishMarker) = head $ toList currentRootChildren
+            threadDelay (10 * 10^3)
+            killThread threadID
+            threadDelay (10 * 10^3)
+            remainingRootChildren <- readMVar rtMapMVar
+            toList remainingRootChildren `shouldBe` []
+            killThread threadID
+            threadDelay (10 * 10^3)
+            remainingRootChildren <- readMVar rtMapMVar
+            toList remainingRootChildren `shouldBe` []
