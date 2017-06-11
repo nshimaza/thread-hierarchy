@@ -80,7 +80,7 @@ markFinish (FinishMarker marker) = putMVar marker ()
     Wait for finish marker marked.  Only used by shutdown routine internally.
 -}
 waitFinish :: FinishMarker -> IO ()
-waitFinish (FinishMarker marker) = takeMVar marker
+waitFinish (FinishMarker marker) = readMVar marker
 
 {-|
     Thread clean up routine automatically installed by newChild.
