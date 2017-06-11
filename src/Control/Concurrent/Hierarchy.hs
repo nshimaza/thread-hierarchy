@@ -137,6 +137,6 @@ cleanup (ThreadMap brotherMap) children = do
     bMap <- readMVar brotherMap
     case lookup myThread bMap of
         (Just bMVar)    -> do
-            putMVar bMVar ()
             takeMVar brotherMap >>= putMVar brotherMap . delete myThread
+            putMVar bMVar ()
         Nothing         -> return ()
