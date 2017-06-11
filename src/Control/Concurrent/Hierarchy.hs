@@ -75,15 +75,12 @@ module Control.Concurrent.Hierarchy
     , shutdown
     ) where
 
-import           Prelude                 hiding (lookup)
-
 import           Control.Concurrent      (ThreadId, forkIOWithUnmask,
                                           killThread, myThreadId)
 import           Control.Concurrent.MVar (MVar, newEmptyMVar, newMVar, putMVar,
                                           readMVar, takeMVar)
 import           Control.Exception       (finally, mask_)
-import           Control.Monad           (void)
-import           Data.Map.Strict         (Map, delete, empty, insert, lookup,
+import           Data.Map.Strict         (Map, delete, empty, insert,
                                           toList)
 
 {-|
