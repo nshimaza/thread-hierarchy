@@ -174,10 +174,10 @@ spec = do
 
         it "works with many threads in normal exit scenario" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            forM_ [1..10000] . const . newChild rootThreadMap $ \_ -> threadDelay (100 * 10^3)
+            forM_ [1..100] . const . newChild rootThreadMap $ \_ -> threadDelay (100 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
             let childrenList = toList currentRootChildren
-            length childrenList `shouldBe` 10000
+            length childrenList `shouldBe` 100
             threadDelay (1 * 10^6)
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
