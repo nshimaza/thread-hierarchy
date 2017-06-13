@@ -4,7 +4,7 @@ module Control.Concurrent.HierarchySpec where
 
 import           Control.Concurrent      (killThread, threadDelay)
 import           Control.Concurrent.MVar (MVar, isEmptyMVar, newEmptyMVar, readMVar, putMVar, takeMVar)
-import           Control.Exception       (AsyncException(ThreadKilled), catch, throw)
+import           Control.Exception       (AsyncException(ThreadKilled), catch)
 import           Control.Monad           (forM_, void)
 import           Data.Map.Strict         (toList)
 import           Data.Typeable           (Typeable, typeOf)
@@ -16,7 +16,8 @@ import           Control.Concurrent.HierarchyInternal
 instance Typeable a => Show (MVar a) where
     show mVar = show (typeOf mVar)
 
-instance Show FinishMarker
+instance Show FinishMarker where
+    show (FinishMarker mVar) = "FinishMarker" ++ show mVar
 
 spec :: Spec
 spec = do
@@ -204,7 +205,7 @@ spec = do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 10^3)
             currentRootChildren <- readMVar rtMapMVar
-            let (threadID, finishMarker) = head $ toList currentRootChildren
+            let (threadID, _) = head $ toList currentRootChildren
             threadDelay (30 * 10^3)
             killThread threadID
             remainingRootChildren <- readMVar rtMapMVar

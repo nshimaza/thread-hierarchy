@@ -47,7 +47,7 @@ newChild brothers@(ThreadMap bMap) action = do
     children <- newThreadMap
     mask_ $ do
         child <- forkIOWithUnmask $ \unmask ->
-            (unmask (action children)) `finally` (cleanup finishMarker brothers children)
+            unmask (action children) `finally` cleanup finishMarker brothers children
         takeMVar bMap >>= putMVar bMap . insert child finishMarker
         return child
 
