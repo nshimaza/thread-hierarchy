@@ -1,4 +1,7 @@
 # thread-hierarchy
+
+[![Build Status](https://travis-ci.org/nshimaza/thread-hierarchy.svg?branch=master)](https://travis-ci.org/nshimaza/thread-hierarchy)
+
 Managing Haskell threads in hierarchical manner.
 
 Threads created by newChild guarantee automatic cleanup on its exit regardless normal exit
