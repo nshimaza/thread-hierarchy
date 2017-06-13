@@ -58,6 +58,19 @@ rootThreadHandler myChildrenThreadMap = do
         return ()
 @
 
+You can install your own cleanup routine using finally or both resource acquisition and cleanup
+routine using bracket.
+
+@
+    -- Forking a new child with your own cleanup
+    void $ newChild childrenOfCurrentThread $ \childrenOfHandler ->
+        yourThreadHandler \`finally\` yourCleanupRoutine
+
+    -- Forking a new child with resource acquisition and cleanup
+    void $ newChild childrenOfCurrentThread $ \childrenOfHandler ->
+        bracket yourResourceAcquiringRoutine yourCleanupRoutine yourThreadHandler
+@
+
 === Limitation
 
 Currently, unlike async function, this module is not designed to back any return value
