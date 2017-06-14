@@ -26,7 +26,6 @@ newtype FinishMarker = FinishMarker (MVar ()) deriving (Eq)
 {-|
     Mutable map containing thread ID and finish marker.
 -}
--- newtype ThreadMap = ThreadMap (MVar (Map ThreadId (MVar ())))
 newtype ThreadMap = ThreadMap (MVar (Map ThreadId FinishMarker))
 
 {-|
