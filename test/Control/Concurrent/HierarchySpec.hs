@@ -30,23 +30,23 @@ spec = do
     describe "newChild" $ do
         it "forks a new thread and register it to given ThreadMap" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
             oneRootChildren <- readMVar rtMapMVar
             (length . toList) oneRootChildren `shouldBe` 1
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
             threeRootChildren <- readMVar rtMapMVar
             (length . toList) threeRootChildren `shouldBe` 3
 
         it "forks a thread which automatically cleanup registration of itself on exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> return ()
+            void . newChild rootThreadMap $ \_ -> return ()
             threadDelay (10 * 1000)
             oneRootChildren <- readMVar rtMapMVar
             toList oneRootChildren `shouldBe` []
-            void $ newChild rootThreadMap $ \_ -> return ()
-            void $ newChild rootThreadMap $ \_ -> return ()
-            void $ newChild rootThreadMap $ \_ -> return ()
+            void . newChild rootThreadMap $ \_ -> return ()
+            void . newChild rootThreadMap $ \_ -> return ()
+            void . newChild rootThreadMap $ \_ -> return ()
             threadDelay (10 * 1000)
             threeRootChildren <- readMVar rtMapMVar
             toList threeRootChildren `shouldBe` []
@@ -55,8 +55,8 @@ spec = do
             parentExceptionMarker <- newEmptyMVar
             childExceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \children -> do
-                void $ newChild children $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \children -> do
+                void . newChild children $ \_ -> threadDelay (10 * 1000000)
                     `catch` \(e :: AsyncException) -> putMVar childExceptionMarker e
                 threadDelay (10 * 1000)
                     `catch` \(e :: AsyncException) -> putMVar parentExceptionMarker e
@@ -74,7 +74,7 @@ spec = do
         it "kills running thread in given ThreadMap" $ do
             exceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
                 `catch` \(e :: AsyncException) -> putMVar exceptionMarker e
             currentRootChildren <- readMVar rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 1
@@ -91,11 +91,11 @@ spec = do
             exceptionMarker2 <- newEmptyMVar
             exceptionMarker3 <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
                 `catch` \(e :: AsyncException) -> putMVar exceptionMarker1 e
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
                 `catch` \(e :: AsyncException) -> putMVar exceptionMarker2 e
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
                 `catch` \(e :: AsyncException) -> putMVar exceptionMarker3 e
             currentRootChildren <- readMVar rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 3
@@ -115,8 +115,8 @@ spec = do
             parentExceptionMarker <- newEmptyMVar
             childExceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \children -> do
-                void $ newChild children $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \children -> do
+                void . newChild children $ \_ -> threadDelay (10 * 1000000)
                     `catch` \(e :: AsyncException) -> putMVar childExceptionMarker e
                 threadDelay (10 * 1000000)
                     `catch` \(e :: AsyncException) -> putMVar parentExceptionMarker e
@@ -135,7 +135,7 @@ spec = do
     describe "Finish marker MVar () inside of ThreadMap" $ do
         it "is filled by () on thread normal exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
             currentRootChildren <- readMVar rtMapMVar
             let (_, FinishMarker markerMVar) = head $ toList currentRootChildren
             mark <- takeMVar markerMVar
@@ -143,7 +143,7 @@ spec = do
 
         it "is filled by () on thread exit by kill" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
             currentRootChildren <- readMVar rtMapMVar
             let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren
             killThread threadID
@@ -152,7 +152,7 @@ spec = do
 
         it "is available after thread normal exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
             currentRootChildren <- readMVar rtMapMVar
             let (_, FinishMarker markerMVar) = head $ toList currentRootChildren
             threadDelay (20 * 1000)
@@ -163,7 +163,7 @@ spec = do
 
         it "is available after the thread was killed" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
             currentRootChildren <- readMVar rtMapMVar
             let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren
             killThread threadID
@@ -203,7 +203,7 @@ spec = do
     describe "Overkill" $ do
         it "Killing normally exited thread doesn't take any effect" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000)
             currentRootChildren <- readMVar rtMapMVar
             let (threadID, _) = head $ toList currentRootChildren
             threadDelay (30 * 1000)
@@ -213,7 +213,7 @@ spec = do
 
         it "Killing already killed thread doesn't take any effect" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void $ newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
+            void . newChild rootThreadMap $ \_ -> threadDelay (10 * 1000000)
             currentRootChildren <- readMVar rtMapMVar
             let (threadID, _) = head $ toList currentRootChildren
             threadDelay (10 * 1000)
