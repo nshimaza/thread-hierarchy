@@ -46,7 +46,7 @@ newThreadMap = ThreadMap <$> newMVar empty
 -}
 newChild
     :: MonadBaseControl IO m
-    => ThreadMap            -- ^ ThreadMap where newly created thread will be registered.
+    => ThreadMap           -- ^ ThreadMap where newly created thread will be registered.
     -> (ThreadMap -> m ()) -- ^ Action executed within the new thread.
     -> m ThreadId          -- ^ newChild returns ThreadId of created thread.
 newChild brothers@(ThreadMap bMap) action = do
