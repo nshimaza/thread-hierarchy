@@ -70,7 +70,7 @@ spec = do
             isParentNotKilled <- isEmptyMVar parentExceptionMarker
             isParentNotKilled `shouldBe` True
 
-    describe "shutdown" $ do
+    describe "killThreadHierarchy" $ do
         it "kills running thread in given ThreadMap" $ do
             exceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
@@ -79,7 +79,7 @@ spec = do
             currentRootChildren <- readMVar rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 1
             threadDelay (10 * 1000)
-            shutdown rootThreadMap
+            killThreadHierarchy rootThreadMap
             threadDelay (10 * 1000)
             caughtException <- readMVar exceptionMarker
             caughtException `shouldBe` ThreadKilled
@@ -100,7 +100,7 @@ spec = do
             currentRootChildren <- readMVar rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 3
             threadDelay (10 * 1000)
-            shutdown rootThreadMap
+            killThreadHierarchy rootThreadMap
             threadDelay (10 * 1000)
             caughtException1 <- readMVar exceptionMarker1
             caughtException2 <- readMVar exceptionMarker2
@@ -123,7 +123,7 @@ spec = do
             currentRootChildren <- readMVar rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 1
             threadDelay (10 * 1000)
-            shutdown rootThreadMap
+            killThreadHierarchy rootThreadMap
             threadDelay (10 * 1000)
             currentRootChildren <- readMVar rtMapMVar
             toList currentRootChildren `shouldBe` []

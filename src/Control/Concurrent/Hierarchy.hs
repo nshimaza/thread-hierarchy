@@ -86,7 +86,7 @@ module Control.Concurrent.Hierarchy
     -- * Functions
     , newThreadMap
     , newChild
-    , shutdown
+    , killThreadHierarchy
     ) where
 
 import Control.Concurrent.HierarchyInternal

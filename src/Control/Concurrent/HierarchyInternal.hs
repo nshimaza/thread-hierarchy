@@ -61,11 +61,11 @@ newChild brothers@(ThreadMap bMap) action = do
 {-|
     Kill all thread registered in given 'ThreadMap'.
 -}
-shutdown
+killThreadHierarchy
     :: MonadBase IO m
     => ThreadMap    -- ^ ThreadMap containing threads to be killed
     -> m ()
-shutdown (ThreadMap children) = do
+killThreadHierarchy (ThreadMap children) = do
     currentChildren <- readMVar children
     mapM_ (killThread . fst) $ toList currentChildren
     remainingChildren <- readMVar children
@@ -84,19 +84,19 @@ markFinish :: MonadBase IO m => FinishMarker -> m ()
 markFinish (FinishMarker marker) = putMVar marker ()
 
 {-|
-    Wait for finish marker marked.  Only used by shutdown routine internally.
+    Wait for finish marker marked.  Only used by killThreadHierarchy routine internally.
 -}
 waitFinish :: MonadBase IO m => FinishMarker -> m ()
 waitFinish (FinishMarker marker) = readMVar marker
 
 {-|
     Thread clean up routine automatically installed by newChild.
-    It shutdowns all its child threads and unregister itself.
+    It first killThreadHierarchy all its child threads and unregister itself.
     This function is not an API function but for internal use only.
 -}
 cleanup :: MonadBase IO m => FinishMarker -> ThreadMap -> ThreadMap -> m ()
 cleanup finishMarker (ThreadMap brotherMap) children = do
-    shutdown children
+    killThreadHierarchy children
     myThread <- myThreadId
     takeMVar brotherMap >>= putMVar brotherMap . delete myThread
     markFinish finishMarker
