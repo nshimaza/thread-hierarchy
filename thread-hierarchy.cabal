@@ -1,7 +1,9 @@
 name:                thread-hierarchy
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Simple Haskel thread management in hierarchical manner
+description:         Threads created by newChild guarantee automatic cleanup
+                     on its exit regardless normal exit or cancellation by
+                     asynchronous exception.
 homepage:            https://github.com/nshimaza/thread-hierarchy#readme
 license:             MIT
 license-file:        LICENSE
