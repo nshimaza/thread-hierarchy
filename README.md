@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Build Status](https://travis-ci.org/nshimaza/thread-hierarchy.svg?branch=master)](https://travis-ci.org/nshimaza/thread-hierarchy)
+[![Hackage](https://img.shields.io/hackage/v/thread-hierarchy.svg?style=flat)](https://hackage.haskell.org/package/thread-hierarchy)
 
 Managing Haskell threads in hierarchical manner.
 
