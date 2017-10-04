@@ -199,9 +199,7 @@ spec = do
             forM_ triggers $ \trigger -> putMVar trigger ()
             let waitForCleanup = do
                     remaining <- readMVar rtMapMVar
-                    unless (toList remaining == []) $ do
-                        threadDelay (10 * 1000)
-                        waitForCleanup
+                    unless (toList remaining == []) $ threadDelay (10 * 1000) >> waitForCleanup
             waitForCleanup
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
@@ -220,9 +218,7 @@ spec = do
             forM_ childrenList $ \(threadID, _) -> killThread threadID
             let waitForCleanup = do
                     remaining <- readMVar rtMapMVar
-                    unless (toList remaining == []) $ do
-                        threadDelay (10 * 1000)
-                        waitForCleanup
+                    unless (toList remaining == []) $ threadDelay (10 * 1000) >> waitForCleanup
             waitForCleanup
             remainingRootChildren <- readMVar rtMapMVar
             toList remainingRootChildren `shouldBe` []
