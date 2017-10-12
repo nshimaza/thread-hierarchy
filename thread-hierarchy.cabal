@@ -1,8 +1,9 @@
 name:                  thread-hierarchy
 version:               0.1.0.1
 synopsis:              Simple Haskel thread management in hierarchical manner
-description:           Threads created by newChild guarantee automatic cleanup
-                       on its exit regardless normal exit or cancellation by
+description:           This package provides parent-child association and guaranteed clean-up of children
+                       over plain Haskell thread.  You can terminate all child threads and grand child threads by
+                       just killing their parent thread.
                        asynchronous exception.
 homepage:              https://github.com/nshimaza/thread-hierarchy#readme
 license:               MIT
