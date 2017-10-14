@@ -55,7 +55,7 @@ newChild brothers@(ThreadMap bMap) action = do
     mask_ $ do
         child <- forkWithUnmask $ \unmask ->
             unmask (action children) `finally` cleanup finishMarker brothers children
-        takeMVar bMap >>= putMVar bMap . insert child finishMarker
+        takeMVar bMap >>= (putMVar bMap $!) . insert child finishMarker
         return child
 
 {-|
@@ -98,5 +98,5 @@ cleanup :: MonadBase IO m => FinishMarker -> ThreadMap -> ThreadMap -> m ()
 cleanup finishMarker (ThreadMap brotherMap) children = do
     killThreadHierarchy children
     myThread <- myThreadId
-    takeMVar brotherMap >>= putMVar brotherMap . delete myThread
+    takeMVar brotherMap >>= (putMVar brotherMap $!) . delete myThread
     markFinish finishMarker
