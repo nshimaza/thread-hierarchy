@@ -18,8 +18,8 @@ just killing their parent thread.
 
 Unlike Unix process, plain Haskell thread, created by forkIO, has no parent-child relation each other.
 This means termination of parent thread doesn't result its children also terminated.
-This is good design as it is low level API because it gives programmer greatest flexibility.
-However, it also means managing entire lifecycle of thread is totally a responsibility of programmer.
+This is good design as a low level API because it gives user greatest flexibility.
+However, it also means managing entire lifecycle of thread is totally a responsibility of user.
 
 Here one thing you need to be aware.  Garbage collection doesn't work on living thread.
 When you lost reference to an object, garbage collector frees up the object for you.
@@ -37,7 +37,40 @@ This package is intended to provide simple replacement API over plain forkIO in 
 all you need to do on parent termination is just terminating all its children.
 
 If you need to keep your child running after parent terminated, this API is not for you.
- 
+
+### Why not withAsync?
+
+The typical use case for this package is TCP server style use case.  In such use case,
+you have to create virtually infinite number of threads and they finish in random timing
+but your are not so interested in their return value.
+
+The `withAsync` coming with `async` package solves different problem than this package.
+It is good for taking actions asynchronously but eventually you need their return values.
+Or, even you aren't care of return values, you only need to take several finite number of
+actions concurrently.
+
+Bellow explains why `withAsync` is not good for managing large number of threads. 
+
+`withAsync` is essentially a sugar over bracket pattern like this.
+
+```haskell
+withAsync action inner = bracket (async action) uninterruptibleCancel inner
+```
+
+It guarantees `uninterruptibleCancel` to the `action` is executed on asynchronous exception
+at parent thread where withAsync itself is living.  However it also guarantees the `uninterruptibleCancel`
+is executed on normal exit from `inner` too.  Thus, the `action` can only live within the
+lifecycle of the `withAsync` call.  If you want to keep your `ation` alive, you have to
+keep `inner` continue running until your `action` finishes.
+
+So, what if let async action go and make recursive call form `innter` back to your loop?
+It is a bad idea.  Because `withAsync` is a `bracket`, recursive call from `inner` makes
+non-tail-recurse call.
+
+In other words, the difference between `withAsync` and `newChild` is strategy of un-installing
+cleanup handler.  `withAsync` uninstalls its cleanup handler based on its lexical scope.
+`newChild` uninstalls it based on actual dynamic thread termination.
+
 ### Usage 
 
 Almost all you need to know is one data type and one function:  `ThreadMap` and `newChild`.
