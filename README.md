@@ -42,7 +42,7 @@ If you need to keep your child running after parent terminated, this API is not 
 
 The typical use case for this package is TCP server style use case.  In such use case,
 you have to create virtually infinite number of threads and they finish in random timing
-but your are not so interested in their return value.
+but you are not so interested in their return value.
 
 The `withAsync` coming with `async` package solves different problem than this package.
 It is good for taking actions asynchronously but eventually you need their return values.
