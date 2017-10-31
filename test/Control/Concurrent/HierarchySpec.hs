@@ -140,6 +140,25 @@ spec = do
             caughtExceptionByParent <- readMVar parentExceptionMarker
             caughtExceptionByParent `shouldBe` ThreadKilled
 
+    describe "Raced termination" $ do
+        it "gracefully terminates threads under race condition" $ do
+            let volume = 10000
+            rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
+            triggers <- forM [1..volume] $ \_ -> do
+                trigger <- newEmptyMVar
+                void . newChild rootThreadMap $ \_ -> takeMVar trigger
+                return trigger
+            currentRootChildren <- readMVar rtMapMVar
+            let childrenList = toList currentRootChildren
+            length childrenList `shouldBe` volume
+
+            forM_ triggers $ \trigger -> putMVar trigger ()
+
+            killThreadHierarchy rootThreadMap
+
+            remainingRootChildren <- readMVar rtMapMVar
+            toList remainingRootChildren `shouldBe` []
+
     describe "Finish marker MVar () inside of ThreadMap" $ do
         it "is filled by () on thread normal exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
