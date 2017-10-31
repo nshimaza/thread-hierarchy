@@ -17,7 +17,7 @@ import           Control.Concurrent.Lifted      (ThreadId, forkWithUnmask,
                                                  killThread, myThreadId)
 import           Control.Concurrent.MVar.Lifted (MVar, newEmptyMVar, newMVar,
                                                  putMVar, readMVar, takeMVar)
-import           Control.Exception.Lifted       (finally, mask_)
+import           Control.Exception.Lifted       (finally, uninterruptibleMask_)
 import           Control.Monad.Base             (MonadBase)
 import           Control.Monad.Trans.Control    (MonadBaseControl)
 import           Data.Map.Strict                (Map, delete, empty, insert,
@@ -52,7 +52,7 @@ newChild
 newChild brothers@(ThreadMap bMap) action = do
     finishMarker <- newFinishMarker
     children <- newThreadMap
-    mask_ $ do
+    uninterruptibleMask_ $ do
         child <- forkWithUnmask $ \unmask ->
             unmask (action children) `finally` cleanup finishMarker brothers children
         takeMVar bMap >>= (putMVar bMap $!) . insert child finishMarker
