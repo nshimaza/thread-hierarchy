@@ -49,7 +49,7 @@ spec = do
             void . newChild rootThreadMap $ \_ -> return ()
             void . newChild rootThreadMap $ \_ -> return ()
             void . newChild rootThreadMap $ \_ -> return ()
-            threadDelay (10 * 1000)
+            threadDelay (20 * 1000)
             threeRootChildren <- readTVarIO rtMapMVar
             toList threeRootChildren `shouldBe` []
 
