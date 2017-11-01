@@ -24,6 +24,7 @@ import           Control.Exception.Lifted       (AsyncException (ThreadKilled),
 import           Control.Monad.Base             (MonadBase, liftBase)
 import           Control.Monad.STM              (atomically)
 import           Control.Monad.Trans.Control    (MonadBaseControl)
+import           Data.Foldable                  (forM_)
 import           Data.Map.Strict                (Map, delete, elems, empty,
                                                  insert, keys)
 
@@ -54,7 +55,7 @@ newChild
     -> (ThreadMap -> m ()) -- ^ Action executed within the new thread.
     -> m ThreadId          -- ^ newChild returns ThreadId of created thread.
 newChild brothers@(ThreadMap bMap) action = do
-    finishMarker <- newFinishMarker
+    finishMarker <- FinishMarker <$> newEmptyMVar
     children <- newThreadMap
     mask_ $ do
         child <- forkWithUnmask $ \unmask ->
@@ -78,40 +79,6 @@ killThreadHierarchy (ThreadMap children) = do
     mapM_ (\(FinishMarker marker) -> readMVar marker) $ elems remainingChildren
 
 {-|
-    Kill a child thread.  Only used by killThreadHierarchy routine internally.
-
-    killThread can be interrupted by ThreadKilled exception thrown from the parent thread.
-    However, because we are here, this thread is being cleaned up.
-    So we can just ignore it and attempt killThread again.
-    Because ThreadKilled is thrown only one time from the parent, we don't try to catch it again.
--}
-killChild :: MonadBaseControl IO m => ThreadId -> m ()
-killChild child = killThread child `catch` (\ThreadKilled -> killThread child)
-
-{-|
-    Create new empty finish marker.  Internal use only.
--}
-newFinishMarker :: MonadBase IO m => m FinishMarker
-newFinishMarker = FinishMarker <$> newEmptyMVar
-
-{-|
-    Filling MVar of finish marker to mark thread finished.  Only used by cleanup routine internally.
--}
-markFinish :: MonadBase IO m => FinishMarker -> m ()
-markFinish (FinishMarker marker) = putMVar marker ()
-
-{-|
-    Wait for finish marker marked.  Only used by killThreadHierarchy routine internally.
-
-    readMVar can be interrupted by ThreadKilled exception thrown from the parent thread.
-    However, because we are here, this thread is being cleaned up.
-    So we can just ignore it and attempt killThread again.
-    Because ThreadKilled is thrown only one time from the parent, we don't try to catch it again.
--}
-waitFinish :: MonadBaseControl IO m => FinishMarker -> m ()
-waitFinish (FinishMarker marker) = readMVar marker `catch` (\ThreadKilled -> readMVar marker)
-
-{-|
     Kill all thread registered in given 'ThreadMap'.
     This internal version is only called from cleanup routine so
     this ignores ThreadKilled asynchronous exception.
@@ -121,10 +88,20 @@ killThreadHierarchyInternal
     => ThreadMap    -- ^ ThreadMap containing threads to be killed
     -> m ()
 killThreadHierarchyInternal (ThreadMap children) = do
+    {-
+        Here we are going to kill all child threads for cleanup.  Because we are already under the way
+        to terminate current thread, we don't want to be interrupted this process by ThreadKilled
+        asynchronous exceptions.
+        Though this routine runs under masked condition, there are two operation where asynchronous
+        exception can interrupts them.  Those are killThread and readMVar.
+        We just catch the exception, ignore it, then reattempt interrupted operation.
+    -}
     currentChildren <- liftBase $ readTVarIO children
-    mapM_ killChild $ keys currentChildren
+    forM_ (keys currentChildren) $ \child ->
+        killThread child `catch` (\ThreadKilled -> killThread child)
     remainingChildren <- liftBase $ readTVarIO children
-    mapM_ waitFinish $ elems remainingChildren
+    forM_ (elems remainingChildren) $ \(FinishMarker marker) ->
+        readMVar marker `catch` (\ThreadKilled -> readMVar marker)
 
 {-|
     Thread clean up routine automatically installed by newChild.
@@ -132,8 +109,8 @@ killThreadHierarchyInternal (ThreadMap children) = do
     This function is not an API function but for internal use only.
 -}
 cleanup :: MonadBaseControl IO m => FinishMarker -> ThreadMap -> ThreadMap -> m ()
-cleanup finishMarker (ThreadMap brotherMap) children = do
+cleanup (FinishMarker marker) (ThreadMap brotherMap) children = do
     killThreadHierarchyInternal children
     myThread <- myThreadId
     liftBase . atomically $ modifyTVar' brotherMap (delete myThread)
-    markFinish finishMarker
+    putMVar marker ()   -- mark finish.
