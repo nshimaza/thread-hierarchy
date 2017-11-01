@@ -24,8 +24,8 @@ import           Control.Exception.Lifted       (AsyncException (ThreadKilled),
 import           Control.Monad.Base             (MonadBase, liftBase)
 import           Control.Monad.STM              (atomically)
 import           Control.Monad.Trans.Control    (MonadBaseControl)
-import           Data.Map.Strict                (Map, delete, empty, insert,
-                                                 toList)
+import           Data.Map.Strict                (Map, delete, elems, empty,
+                                                 insert, keys)
 
 
 {-|
@@ -71,9 +71,9 @@ killThreadHierarchy
     -> m ()
 killThreadHierarchy (ThreadMap children) = do
     currentChildren <- liftBase $ readTVarIO children
-    mapM_ (killChild . fst) $ toList currentChildren
+    mapM_ killChild $ keys currentChildren
     remainingChildren <- liftBase $ readTVarIO children
-    mapM_ (waitFinish . snd) $ toList remainingChildren
+    mapM_ waitFinish $ elems remainingChildren
 
 {-|
     Kill a child thread.  Only used by killThreadHierarchy routine internally.
