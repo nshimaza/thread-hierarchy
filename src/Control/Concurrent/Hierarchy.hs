@@ -82,7 +82,7 @@ module Control.Concurrent.Hierarchy
     (
     -- * Types
       FinishMarker
-    , ThreadMap (..)
+    , ThreadMap
     -- * Functions
     , newThreadMap
     , newChild
