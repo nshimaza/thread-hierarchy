@@ -64,6 +64,8 @@ newChild brothers@(ThreadMap bMap) action = do
 
 {-|
     Kill all thread registered in given 'ThreadMap'.
+    This version is exposed as API.  This is not called from cleanup routine.
+    Thus it doesn't ignore asynchronous exceptions.
 -}
 killThreadHierarchy
     :: MonadBaseControl IO m
@@ -71,9 +73,9 @@ killThreadHierarchy
     -> m ()
 killThreadHierarchy (ThreadMap children) = do
     currentChildren <- liftBase $ readTVarIO children
-    mapM_ killChild $ keys currentChildren
+    mapM_ killThread $ keys currentChildren
     remainingChildren <- liftBase $ readTVarIO children
-    mapM_ waitFinish $ elems remainingChildren
+    mapM_ (\(FinishMarker marker) -> readMVar marker) $ elems remainingChildren
 
 {-|
     Kill a child thread.  Only used by killThreadHierarchy routine internally.
@@ -110,13 +112,28 @@ waitFinish :: MonadBaseControl IO m => FinishMarker -> m ()
 waitFinish (FinishMarker marker) = readMVar marker `catch` (\ThreadKilled -> readMVar marker)
 
 {-|
+    Kill all thread registered in given 'ThreadMap'.
+    This internal version is only called from cleanup routine so
+    this ignores ThreadKilled asynchronous exception.
+-}
+killThreadHierarchyInternal
+    :: MonadBaseControl IO m
+    => ThreadMap    -- ^ ThreadMap containing threads to be killed
+    -> m ()
+killThreadHierarchyInternal (ThreadMap children) = do
+    currentChildren <- liftBase $ readTVarIO children
+    mapM_ killChild $ keys currentChildren
+    remainingChildren <- liftBase $ readTVarIO children
+    mapM_ waitFinish $ elems remainingChildren
+
+{-|
     Thread clean up routine automatically installed by newChild.
     It first killThreadHierarchy all its child threads and unregister itself.
     This function is not an API function but for internal use only.
 -}
 cleanup :: MonadBaseControl IO m => FinishMarker -> ThreadMap -> ThreadMap -> m ()
 cleanup finishMarker (ThreadMap brotherMap) children = do
-    killThreadHierarchy children
+    killThreadHierarchyInternal children
     myThread <- myThreadId
     liftBase . atomically $ modifyTVar' brotherMap (delete myThread)
     markFinish finishMarker
