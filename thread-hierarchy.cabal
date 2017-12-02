@@ -1,5 +1,5 @@
 name:                  thread-hierarchy
-version:               0.2.0.0
+version:               0.3.0.0
 synopsis:              Simple Haskel thread management in hierarchical manner
 description:           This package provides parent-child association and guaranteed clean-up of children
                        over plain Haskell thread.  You can terminate all child threads and grand child threads by
@@ -23,10 +23,7 @@ library
                      , Control.Concurrent.HierarchyInternal
   build-depends:       base >= 4.7 && < 5
                      , containers
-                     , lifted-base
-                     , monad-control
                      , stm
-                     , transformers-base
   default-language:    Haskell2010
 
 test-suite thread-hierarchy-test

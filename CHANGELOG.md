@@ -1,3 +1,6 @@
+## Thread-hierarchy 0.3.0.0
+* Back to basic.  Unlifted APIs to IO.
+
 ## Thread-hierarchy 0.2.0.0
 * Improved implementation of previous fix.
 * No longer expose constructor of ThreadMap.

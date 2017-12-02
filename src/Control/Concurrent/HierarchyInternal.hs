@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 
 {-|
 Module      : Control.Concurrent.HierarchyInternal
@@ -13,20 +11,18 @@ Internal implementations of Control.Concurrent.Hierarchy
 -}
 module Control.Concurrent.HierarchyInternal where
 
-import           Control.Concurrent.Lifted      (ThreadId, forkWithUnmask,
-                                                 killThread, myThreadId)
-import           Control.Concurrent.MVar.Lifted (MVar, newEmptyMVar, newMVar,
-                                                 putMVar, readMVar)
-import           Control.Concurrent.STM.TVar    (TVar, modifyTVar', newTVarIO,
-                                                 readTVarIO)
-import           Control.Exception.Lifted       (AsyncException (ThreadKilled),
-                                                 catch, finally, mask_)
-import           Control.Monad.Base             (MonadBase, liftBase)
-import           Control.Monad.STM              (atomically)
-import           Control.Monad.Trans.Control    (MonadBaseControl)
-import           Data.Foldable                  (forM_)
-import           Data.Map.Strict                (Map, delete, elems, empty,
-                                                 insert, keys)
+import           Control.Concurrent          (ThreadId, forkIOWithUnmask,
+                                              killThread, myThreadId)
+import           Control.Concurrent.MVar     (MVar, newEmptyMVar, newMVar,
+                                              putMVar, readMVar)
+import           Control.Concurrent.STM.TVar (TVar, modifyTVar', newTVarIO,
+                                              readTVarIO)
+import           Control.Exception           (AsyncException (ThreadKilled),
+                                              catch, finally, mask_)
+import           Control.Monad.STM           (atomically)
+import           Data.Foldable               (for_, traverse_)
+import           Data.Map.Strict             (Map, delete, elems, empty, insert,
+                                              keys)
 
 
 {-|
@@ -43,24 +39,23 @@ newtype ThreadMap = ThreadMap (TVar (Map ThreadId FinishMarker))
 {-|
     Create a new empty 'ThreadMap'.
 -}
-newThreadMap :: MonadBase IO m => m ThreadMap
-newThreadMap = liftBase $ ThreadMap <$> newTVarIO empty
+newThreadMap :: IO ThreadMap
+newThreadMap = ThreadMap <$> newTVarIO empty
 
 {-|
     Create a new thread and register it to given 'ThreadMap'.
 -}
 newChild
-    :: MonadBaseControl IO m
-    => ThreadMap           -- ^ ThreadMap where newly created thread will be registered.
-    -> (ThreadMap -> m ()) -- ^ Action executed within the new thread.
-    -> m ThreadId          -- ^ newChild returns ThreadId of created thread.
+    :: ThreadMap            -- ^ ThreadMap where newly created thread will be registered.
+    -> (ThreadMap -> IO ()) -- ^ Action executed within the new thread.
+    -> IO ThreadId          -- ^ newChild returns ThreadId of created thread.
 newChild brothers@(ThreadMap bMap) action = do
     finishMarker <- FinishMarker <$> newEmptyMVar
     children <- newThreadMap
     mask_ $ do
-        child <- forkWithUnmask $ \unmask ->
+        child <- forkIOWithUnmask $ \unmask ->
             unmask (action children) `finally` cleanup finishMarker brothers children
-        liftBase . atomically $ modifyTVar' bMap (insert child finishMarker)
+        atomically $ modifyTVar' bMap (insert child finishMarker)
         return child
 
 {-|
@@ -69,14 +64,13 @@ newChild brothers@(ThreadMap bMap) action = do
     Thus it doesn't ignore asynchronous exceptions.
 -}
 killThreadHierarchy
-    :: MonadBaseControl IO m
-    => ThreadMap    -- ^ ThreadMap containing threads to be killed
-    -> m ()
+    :: ThreadMap    -- ^ ThreadMap containing threads to be killed
+    -> IO ()
 killThreadHierarchy (ThreadMap children) = do
-    currentChildren <- liftBase $ readTVarIO children
-    mapM_ killThread $ keys currentChildren
-    remainingChildren <- liftBase $ readTVarIO children
-    mapM_ (\(FinishMarker marker) -> readMVar marker) $ elems remainingChildren
+    currentChildren <- readTVarIO children
+    traverse_ killThread $ keys currentChildren
+    remainingChildren <- readTVarIO children
+    traverse_ (\(FinishMarker marker) -> readMVar marker) $ elems remainingChildren
 
 {-|
     Kill all thread registered in given 'ThreadMap'.
@@ -84,9 +78,8 @@ killThreadHierarchy (ThreadMap children) = do
     this ignores ThreadKilled asynchronous exception.
 -}
 killThreadHierarchyInternal
-    :: MonadBaseControl IO m
-    => ThreadMap    -- ^ ThreadMap containing threads to be killed
-    -> m ()
+    :: ThreadMap    -- ^ ThreadMap containing threads to be killed
+    -> IO ()
 killThreadHierarchyInternal (ThreadMap children) = do
     {-
         Here we are going to kill all child threads for cleanup.  Because we are already under the way
@@ -96,11 +89,11 @@ killThreadHierarchyInternal (ThreadMap children) = do
         exception can interrupts them.  Those are killThread and readMVar.
         We just catch the exception, ignore it, then reattempt interrupted operation.
     -}
-    currentChildren <- liftBase $ readTVarIO children
-    forM_ (keys currentChildren) $ \child ->
+    currentChildren <- readTVarIO children
+    for_ (keys currentChildren) $ \child ->
         killThread child `catch` (\ThreadKilled -> killThread child)
-    remainingChildren <- liftBase $ readTVarIO children
-    forM_ (elems remainingChildren) $ \(FinishMarker marker) ->
+    remainingChildren <- readTVarIO children
+    for_ (elems remainingChildren) $ \(FinishMarker marker) ->
         readMVar marker `catch` (\ThreadKilled -> readMVar marker)
 
 {-|
@@ -108,9 +101,9 @@ killThreadHierarchyInternal (ThreadMap children) = do
     It first killThreadHierarchy all its child threads and unregister itself.
     This function is not an API function but for internal use only.
 -}
-cleanup :: MonadBaseControl IO m => FinishMarker -> ThreadMap -> ThreadMap -> m ()
+cleanup :: FinishMarker -> ThreadMap -> ThreadMap -> IO ()
 cleanup (FinishMarker marker) (ThreadMap brotherMap) children = do
     killThreadHierarchyInternal children
     myThread <- myThreadId
-    liftBase . atomically $ modifyTVar' brotherMap (delete myThread)
+    atomically $ modifyTVar' brotherMap (delete myThread)
     putMVar marker ()   -- mark finish.
