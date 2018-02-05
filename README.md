@@ -141,8 +141,6 @@ routine using bracket.
         bracket yourResourceAcquiringRoutine yourCleanupRoutine yourThreadHandler
 ```
 
-You can also find a use case from [tcp-server](https://github.com/nshimaza/tcp-server) package.
-
 ### Limitation
 
 Currently, unlike async function, this module is not designed to back any return value
