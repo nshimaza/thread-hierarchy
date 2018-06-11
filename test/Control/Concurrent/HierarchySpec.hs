@@ -1,7 +1,6 @@
 module Control.Concurrent.HierarchySpec where
 
-import           Control.Concurrent                   (killThread, threadDelay,
-                                                       yield)
+import           Control.Concurrent                   (killThread, threadDelay)
 import           Control.Concurrent.MVar              (MVar, isEmptyMVar,
                                                        newEmptyMVar, putMVar,
                                                        readMVar, takeMVar)
@@ -9,7 +8,7 @@ import           Control.Concurrent.STM.TVar          (readTVarIO)
 import           Control.Exception                    (AsyncException (ThreadKilled),
                                                        catch)
 import           Control.Monad                        (unless, void)
-import           Data.Foldable                        (for_, traverse_)
+import           Data.Foldable                        (for_)
 import           Data.Map.Strict                      (toList)
 import           Data.Traversable                     (for)
 import           Data.Typeable                        (Typeable, typeOf)
@@ -109,8 +108,8 @@ spec = do
                 `catch` \e -> putMVar exceptionMarker2 (e :: AsyncException)
             void . newChild rootThreadMap $ \_ -> takeMVar blocker
                 `catch` \e -> putMVar exceptionMarker3 (e :: AsyncException)
-            currentRootChildren <- readTVarIO rtMapMVar
-            (length . toList) currentRootChildren `shouldBe` 3
+            currentRootChildren1 <- readTVarIO rtMapMVar
+            (length . toList) currentRootChildren1 `shouldBe` 3
             threadDelay (10 * 1000)
             killThreadHierarchy rootThreadMap
             threadDelay (10 * 1000)
@@ -120,8 +119,8 @@ spec = do
             caughtException1 `shouldBe` ThreadKilled
             caughtException2 `shouldBe` ThreadKilled
             caughtException3 `shouldBe` ThreadKilled
-            currentRootChildren <- readTVarIO rtMapMVar
-            toList currentRootChildren `shouldBe` []
+            currentRootChildren2 <- readTVarIO rtMapMVar
+            toList currentRootChildren2 `shouldBe` []
 
         it "kills entire hierarchy of threads" $ do
             parentExceptionMarker <- newEmptyMVar
@@ -133,13 +132,13 @@ spec = do
                     `catch` \e -> putMVar childExceptionMarker (e :: AsyncException)
                 takeMVar blocker
                     `catch` \e -> putMVar parentExceptionMarker (e :: AsyncException)
-            currentRootChildren <- readTVarIO rtMapMVar
-            (length . toList) currentRootChildren `shouldBe` 1
+            currentRootChildren1 <- readTVarIO rtMapMVar
+            (length . toList) currentRootChildren1 `shouldBe` 1
             threadDelay (10 * 1000)
             killThreadHierarchy rootThreadMap
             threadDelay (10 * 1000)
-            currentRootChildren <- readTVarIO rtMapMVar
-            toList currentRootChildren `shouldBe` []
+            currentRootChildren2 <- readTVarIO rtMapMVar
+            toList currentRootChildren2 `shouldBe` []
             caughtExceptionByChild <- readMVar childExceptionMarker
             caughtExceptionByChild `shouldBe` ThreadKilled
             caughtExceptionByParent <- readMVar parentExceptionMarker
@@ -206,12 +205,12 @@ spec = do
             trigger <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void . newChild rootThreadMap $ \_ -> takeMVar trigger
-            currentRootChildren <- readTVarIO rtMapMVar
-            let (_, FinishMarker markerMVar) = head $ toList currentRootChildren
+            currentRootChildren1 <- readTVarIO rtMapMVar
+            let (_, FinishMarker markerMVar) = head $ toList currentRootChildren1
             putMVar trigger ()
             threadDelay (10 * 1000)
-            currentRootChildren <- readTVarIO rtMapMVar
-            toList currentRootChildren `shouldBe` []
+            currentRootChildren2 <- readTVarIO rtMapMVar
+            toList currentRootChildren2 `shouldBe` []
             mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
@@ -219,12 +218,12 @@ spec = do
             blocker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void . newChild rootThreadMap $ \_ -> takeMVar blocker
-            currentRootChildren <- readTVarIO rtMapMVar
-            let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren
+            currentRootChildren1 <- readTVarIO rtMapMVar
+            let (threadID, FinishMarker markerMVar) = head $ toList currentRootChildren1
             killThread threadID
             threadDelay (10 * 1000)
-            currentRootChildren <- readTVarIO rtMapMVar
-            toList currentRootChildren `shouldBe` []
+            currentRootChildren2 <- readTVarIO rtMapMVar
+            toList currentRootChildren2 `shouldBe` []
             mark <- takeMVar markerMVar
             mark `shouldBe` ()
 
@@ -292,9 +291,9 @@ spec = do
             threadDelay (10 * 1000)
             killThread threadID
             threadDelay (10 * 1000)
-            remainingRootChildren <- readTVarIO rtMapMVar
-            toList remainingRootChildren `shouldBe` []
+            remainingRootChildren1 <- readTVarIO rtMapMVar
+            toList remainingRootChildren1 `shouldBe` []
             killThread threadID
             threadDelay (10 * 1000)
-            remainingRootChildren <- readTVarIO rtMapMVar
-            toList remainingRootChildren `shouldBe` []
+            remainingRootChildren2 <- readTVarIO rtMapMVar
+            toList remainingRootChildren2 `shouldBe` []

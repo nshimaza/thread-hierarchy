@@ -13,8 +13,8 @@ module Control.Concurrent.HierarchyInternal where
 
 import           Control.Concurrent          (ThreadId, forkIOWithUnmask,
                                               killThread, myThreadId)
-import           Control.Concurrent.MVar     (MVar, newEmptyMVar, newMVar,
-                                              putMVar, readMVar)
+import           Control.Concurrent.MVar     (MVar, newEmptyMVar, putMVar,
+                                              readMVar)
 import           Control.Concurrent.STM.TVar (TVar, modifyTVar', newTVarIO,
                                               readTVarIO)
 import           Control.Exception           (AsyncException (ThreadKilled),

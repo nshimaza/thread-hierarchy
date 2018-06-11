@@ -89,4 +89,4 @@ module Control.Concurrent.Hierarchy
     , killThreadHierarchy
     ) where
 
-import Control.Concurrent.HierarchyInternal
+import           Control.Concurrent.HierarchyInternal
