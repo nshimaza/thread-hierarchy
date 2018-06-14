@@ -35,7 +35,7 @@ library:
   source-dirs: src
 
 tests:
-  hoge-test:
+  thread-hierarchy-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
