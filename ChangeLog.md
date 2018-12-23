@@ -1,3 +1,7 @@
+## Thread-hierarchy 0.3.0.1
+
+* Move to hpack from hand written cabal project file
+
 ## Thread-hierarchy 0.3.0.0
 * Back to basic.  Unlifted APIs to IO.
 

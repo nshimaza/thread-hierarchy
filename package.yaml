@@ -1,5 +1,5 @@
 name:                thread-hierarchy
-version:             0.3.0.0
+version:             0.3.0.1
 github:              "nshimaza/thread-hierarchy"
 license:             MIT
 author:              "Naoto Shimazaki"
