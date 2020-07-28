@@ -60,7 +60,7 @@ spec = do
             takeMVar marker1
             takeMVar marker2
             takeMVar marker3
-            threadDelay (30 * 1000)
+            threadDelay (100 * 1000)
             threeRootChildren <- readTVarIO rtMapMVar
             toList threeRootChildren `shouldBe` []
 
