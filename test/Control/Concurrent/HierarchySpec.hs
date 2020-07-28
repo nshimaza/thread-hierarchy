@@ -48,6 +48,7 @@ spec = do
             marker <- newEmptyMVar
             void . newChild rootThreadMap $ \_ -> putMVar marker ()
             takeMVar marker
+            threadDelay (10 * 1000)
             oneRootChildren <- readTVarIO rtMapMVar
             toList oneRootChildren `shouldBe` []
             marker1 <- newEmptyMVar
@@ -59,7 +60,7 @@ spec = do
             takeMVar marker1
             takeMVar marker2
             takeMVar marker3
-            threadDelay 1000
+            threadDelay (10 * 1000)
             threeRootChildren <- readTVarIO rtMapMVar
             toList threeRootChildren `shouldBe` []
 
@@ -82,7 +83,7 @@ spec = do
             (length . toList) runningRootChildren `shouldBe` 1
             putMVar trigger ()
             takeMVar parentFinishMarker
-            threadDelay 1000
+            threadDelay (10 * 1000)
             finishedRootChildren <- readTVarIO rtMapMVar
             toList finishedRootChildren `shouldBe` []
             caughtExceptionByChild <- readMVar childExceptionMarker
