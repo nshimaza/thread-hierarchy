@@ -1,3 +1,9 @@
+## Thread-hierarchy 0.3.0.2
+
+* Include .cabal file in source repo.
+* Migrate CI from Travis to GitHub Actions.
+* Build and test for multiple platforms and GHC versions.
+
 ## Thread-hierarchy 0.3.0.1
 
 * Move to hpack from hand written cabal project file

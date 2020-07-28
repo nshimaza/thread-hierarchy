@@ -1,7 +1,7 @@
 # thread-hierarchy
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://travis-ci.org/nshimaza/thread-hierarchy.svg?branch=master)](https://travis-ci.org/nshimaza/thread-hierarchy)
+[![Build Status](https://github.com/nshimaza/thread-hierarchy/workflows/build/badge.svg)](https://github.com/nshimaza/thread-hierarchy/actions?query=workflow%3Abuild)
 [![Hackage](https://img.shields.io/hackage/v/thread-hierarchy.svg?style=flat)](https://hackage.haskell.org/package/thread-hierarchy)
 [![Stackage Nightly](http://stackage.org/package/thread-hierarchy/badge/nightly)](http://stackage.org/nightly/package/thread-hierarchy)
 [![Stackage LTS](http://stackage.org/package/thread-hierarchy/badge/lts)](http://stackage.org/lts/package/thread-hierarchy)

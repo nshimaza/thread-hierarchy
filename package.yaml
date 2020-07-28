@@ -1,10 +1,10 @@
 name:                thread-hierarchy
-version:             0.3.0.1
+version:             0.3.0.2
 github:              "nshimaza/thread-hierarchy"
 license:             MIT
 author:              "Naoto Shimazaki"
 maintainer:          "Naoto.Shimazaki@gmail.com"
-copyright:           "2017,2018 Naoto Shimazaki"
+copyright:           "2017-2020 Naoto Shimazaki"
 
 extra-source-files:
 - README.md
@@ -42,6 +42,8 @@ tests:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    build-tools:
+    - hspec-discover
     dependencies:
     - thread-hierarchy
     - hspec
