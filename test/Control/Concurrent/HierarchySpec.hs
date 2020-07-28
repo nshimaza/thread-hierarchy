@@ -45,33 +45,44 @@ spec = do
 
         it "forks a thread which automatically cleanup registration of itself on exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void . newChild rootThreadMap $ \_ -> return ()
-            threadDelay (10 * 1000)
+            marker <- newEmptyMVar
+            void . newChild rootThreadMap $ \_ -> putMVar marker ()
+            takeMVar marker
             oneRootChildren <- readTVarIO rtMapMVar
             toList oneRootChildren `shouldBe` []
-            void . newChild rootThreadMap $ \_ -> return ()
-            void . newChild rootThreadMap $ \_ -> return ()
-            void . newChild rootThreadMap $ \_ -> return ()
-            threadDelay (20 * 1000)
+            marker1 <- newEmptyMVar
+            marker2 <- newEmptyMVar
+            marker3 <- newEmptyMVar
+            void . newChild rootThreadMap $ \_ -> putMVar marker1 ()
+            void . newChild rootThreadMap $ \_ -> putMVar marker2 ()
+            void . newChild rootThreadMap $ \_ -> putMVar marker3 ()
+            takeMVar marker1
+            takeMVar marker2
+            takeMVar marker3
+            threadDelay 1000
             threeRootChildren <- readTVarIO rtMapMVar
             toList threeRootChildren `shouldBe` []
 
-        it "forks a thread whihch automatically kills its child on normal exit" $ do
+        it "forks a thread which automatically kills its child on normal exit" $ do
             parentExceptionMarker <- newEmptyMVar
-            childExceptionMarker <- newEmptyMVar
+            parentFinishMarker <- newEmptyMVar
+            childStartMarker <- newEmptyMVar
             blocker <- newEmptyMVar
+            childExceptionMarker <- newEmptyMVar
             trigger <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void . newChild rootThreadMap $ \children -> do
-                void . newChild children $ \_ -> takeMVar blocker
+                void . newChild children $ \_ -> (putMVar childStartMarker () *> takeMVar blocker)
                     `catch` \e -> putMVar childExceptionMarker (e :: AsyncException)
                 takeMVar trigger
                     `catch` \e -> putMVar parentExceptionMarker (e :: AsyncException)
+                putMVar parentFinishMarker ()
+            takeMVar childStartMarker
             runningRootChildren <- readTVarIO rtMapMVar
             (length . toList) runningRootChildren `shouldBe` 1
-            threadDelay (10 * 1000)
             putMVar trigger ()
-            threadDelay (10 * 1000)
+            takeMVar parentFinishMarker
+            threadDelay 1000
             finishedRootChildren <- readTVarIO rtMapMVar
             toList finishedRootChildren `shouldBe` []
             caughtExceptionByChild <- readMVar childExceptionMarker
@@ -81,38 +92,42 @@ spec = do
 
     describe "killThreadHierarchy" $ do
         it "kills running thread in given ThreadMap" $ do
-            exceptionMarker <- newEmptyMVar
+            startMarker <- newEmptyMVar
             blocker <- newEmptyMVar
+            exceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void . newChild rootThreadMap $ \_ -> takeMVar blocker
+            void . newChild rootThreadMap $ \_ -> (putMVar startMarker () *> takeMVar blocker)
                 `catch` \e -> putMVar exceptionMarker (e :: AsyncException)
+            takeMVar startMarker
             currentRootChildren <- readTVarIO rtMapMVar
             (length . toList) currentRootChildren `shouldBe` 1
-            threadDelay (10 * 1000)
             killThreadHierarchy rootThreadMap
-            threadDelay (10 * 1000)
             caughtException <- readMVar exceptionMarker
             caughtException `shouldBe` ThreadKilled
             remainingRootChildren <- readTVarIO rtMapMVar
             toList remainingRootChildren `shouldBe` []
 
         it "kills all running thread in given ThreadMap" $ do
+            startMarker1 <- newEmptyMVar
             exceptionMarker1 <- newEmptyMVar
+            startMarker2 <- newEmptyMVar
             exceptionMarker2 <- newEmptyMVar
+            startMarker3 <- newEmptyMVar
             exceptionMarker3 <- newEmptyMVar
             blocker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            void . newChild rootThreadMap $ \_ -> takeMVar blocker
+            void . newChild rootThreadMap $ \_ -> (putMVar startMarker1 () *> takeMVar blocker)
                 `catch` \e -> putMVar exceptionMarker1 (e :: AsyncException)
-            void . newChild rootThreadMap $ \_ -> takeMVar blocker
+            void . newChild rootThreadMap $ \_ -> (putMVar startMarker2 () *> takeMVar blocker)
                 `catch` \e -> putMVar exceptionMarker2 (e :: AsyncException)
-            void . newChild rootThreadMap $ \_ -> takeMVar blocker
+            void . newChild rootThreadMap $ \_ -> (putMVar startMarker3 () *> takeMVar blocker)
                 `catch` \e -> putMVar exceptionMarker3 (e :: AsyncException)
+            takeMVar startMarker1
+            takeMVar startMarker2
+            takeMVar startMarker3
             currentRootChildren1 <- readTVarIO rtMapMVar
             (length . toList) currentRootChildren1 `shouldBe` 3
-            threadDelay (10 * 1000)
             killThreadHierarchy rootThreadMap
-            threadDelay (10 * 1000)
             caughtException1 <- readMVar exceptionMarker1
             caughtException2 <- readMVar exceptionMarker2
             caughtException3 <- readMVar exceptionMarker3
@@ -123,26 +138,27 @@ spec = do
             toList currentRootChildren2 `shouldBe` []
 
         it "kills entire hierarchy of threads" $ do
-            parentExceptionMarker <- newEmptyMVar
-            childExceptionMarker <- newEmptyMVar
+            childStartMarker <- newEmptyMVar
             blocker <- newEmptyMVar
+            childExceptionMarker <- newEmptyMVar
+            parentExceptionMarker <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void . newChild rootThreadMap $ \children -> do
-                void . newChild children $ \_ -> takeMVar blocker
+                void . newChild children $ \_ -> (putMVar childStartMarker () *> takeMVar blocker)
                     `catch` \e -> putMVar childExceptionMarker (e :: AsyncException)
                 takeMVar blocker
                     `catch` \e -> putMVar parentExceptionMarker (e :: AsyncException)
+            takeMVar childStartMarker
             currentRootChildren1 <- readTVarIO rtMapMVar
             (length . toList) currentRootChildren1 `shouldBe` 1
-            threadDelay (10 * 1000)
             killThreadHierarchy rootThreadMap
-            threadDelay (10 * 1000)
-            currentRootChildren2 <- readTVarIO rtMapMVar
-            toList currentRootChildren2 `shouldBe` []
             caughtExceptionByChild <- readMVar childExceptionMarker
             caughtExceptionByChild `shouldBe` ThreadKilled
             caughtExceptionByParent <- readMVar parentExceptionMarker
             caughtExceptionByParent `shouldBe` ThreadKilled
+            threadDelay 1000
+            currentRootChildren2 <- readTVarIO rtMapMVar
+            toList currentRootChildren2 `shouldBe` []
 
     describe "Raced termination" $ do
         it "gracefully terminates threads under race condition" $ do
@@ -162,15 +178,15 @@ spec = do
             remainingRootChildren <- readTVarIO rtMapMVar
             toList remainingRootChildren `shouldBe` []
 
-        it "gracefully terminates multi-layerd threads under race condition" $ do
+        it "gracefully terminates multi-layered threads under race condition" $ do
             let volume = 10000
             blocker <- newEmptyMVar
             trigger <- newEmptyMVar
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
             void . newChild rootThreadMap $ \childThreadMap@(ThreadMap chMapMVar) -> do
                 for_ [1..volume] . const . newChild childThreadMap $ \_ -> takeMVar blocker
-                currenGrandChildren <- readTVarIO chMapMVar
-                let grandChildrenList = toList currenGrandChildren
+                currentGrandChildren <- readTVarIO chMapMVar
+                let grandChildrenList = toList currentGrandChildren
                 length grandChildrenList `shouldBe` volume
                 takeMVar trigger
 
