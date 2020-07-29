@@ -45,21 +45,23 @@ spec = do
 
         it "forks a thread which automatically cleanup registration of itself on exit" $ do
             rootThreadMap@(ThreadMap rtMapMVar) <- newThreadMap
-            marker <- newEmptyMVar
-            void . newChild rootThreadMap $ \_ -> putMVar marker ()
-            takeMVar marker
+            trigger <- newEmptyMVar
+            void . newChild rootThreadMap $ \_ -> takeMVar trigger
+            putMVar trigger ()
             threadDelay (10 * 1000)
             oneRootChildren <- readTVarIO rtMapMVar
             toList oneRootChildren `shouldBe` []
-            marker1 <- newEmptyMVar
-            marker2 <- newEmptyMVar
-            marker3 <- newEmptyMVar
-            void . newChild rootThreadMap $ \_ -> putMVar marker1 ()
-            void . newChild rootThreadMap $ \_ -> putMVar marker2 ()
-            void . newChild rootThreadMap $ \_ -> putMVar marker3 ()
-            takeMVar marker1
-            takeMVar marker2
-            takeMVar marker3
+            trigger1 <- newEmptyMVar
+            trigger2 <- newEmptyMVar
+            trigger3 <- newEmptyMVar
+            void . newChild rootThreadMap $ \_ -> takeMVar trigger1
+            void . newChild rootThreadMap $ \_ -> takeMVar trigger2
+            void . newChild rootThreadMap $ \_ -> takeMVar trigger3
+            putMVar trigger1 ()
+            threadDelay 1000
+            putMVar trigger2 ()
+            threadDelay 1000
+            putMVar trigger3 ()
             threadDelay (100 * 1000)
             threeRootChildren <- readTVarIO rtMapMVar
             toList threeRootChildren `shouldBe` []
