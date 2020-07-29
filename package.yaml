@@ -11,7 +11,7 @@ extra-source-files:
 - ChangeLog.md
 
 # Metadata used when publishing your package
-synopsis:            Simple Haskel thread management in hierarchical manner
+synopsis:            Simple Haskell thread management in hierarchical manner
 category:            Concurrency
 
 # To avoid duplicated efforts in documentation and dealing with the

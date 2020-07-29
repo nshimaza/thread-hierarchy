@@ -23,7 +23,7 @@ However, it also means managing entire lifecycle of thread is totally a responsi
 
 Here one thing you need to be aware.  Garbage collection doesn't work on living thread.
 When you lost reference to an object, garbage collector frees up the object for you.
-However, even though you lost the thread ID of your child thread, Haskel runtime doesn't consider
+However, even though you lost the thread ID of your child thread, Haskell runtime doesn't consider
 the thread is orphaned.  The child thread continue running.
 
 This is prone to create thread leakage.  You can accidentally lose thread ID of child thread
@@ -60,10 +60,10 @@ withAsync action inner = bracket (async action) uninterruptibleCancel inner
 It guarantees `uninterruptibleCancel` to the `action` is executed on asynchronous exception
 at parent thread where withAsync itself is living.  However it also guarantees the `uninterruptibleCancel`
 is executed on normal exit from `inner` too.  Thus, the `action` can only live within the
-lifecycle of the `withAsync` call.  If you want to keep your `ation` alive, you have to
+lifecycle of the `withAsync` call.  If you want to keep your `action` alive, you have to
 keep `inner` continue running until your `action` finishes.
 
-So, what if let async action go and make recursive call form `innter` back to your loop?
+So, what if let async action go and make recursive call form `inner` back to your loop?
 It is a bad idea.  Because `withAsync` is a `bracket`, recursive call from `inner` makes
 non-tail-recurse call.
 

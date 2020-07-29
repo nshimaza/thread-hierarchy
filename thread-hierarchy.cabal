@@ -6,7 +6,7 @@ cabal-version: 1.12
 
 name:           thread-hierarchy
 version:        0.3.0.2
-synopsis:       Simple Haskel thread management in hierarchical manner
+synopsis:       Simple Haskell thread management in hierarchical manner
 description:    Please see the README on GitHub at <https://github.com/nshimaza/thread-hierarchy#readme>
 category:       Concurrency
 homepage:       https://github.com/nshimaza/thread-hierarchy#readme

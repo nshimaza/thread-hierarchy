@@ -1,6 +1,6 @@
 {-|
 Module      : Control.Concurrent.Hierarchy
-Copyright   : (c) Naoto Shimazaki 2017
+Copyright   : (c) Naoto Shimazaki 2017-2020
 License     : MIT (see the file LICENSE)
 
 Maintainer  : https://github.com/nshimaza
